@@ -1,19 +1,10 @@
 from enum import Enum
 import string
 
-class FieldColor(Enum):
-    BLACK = "Black"
-    WHITE = "White"
-
-field_black=FieldColor.BLACK
-field_white=FieldColor.WHITE
-
 class CheckerColor(Enum):
     X="X"
     O="O"
 
-checker_black=CheckerColor.X
-checker_white=CheckerColor.O
 
 class Board:
     def __init__(self, num_of_fields):
@@ -60,8 +51,7 @@ class Board:
                     self.drawSingleElement(self.fields[i * self.num_of_fields//2 + j//2], k*3)
                     pom=1
                 else:
-                    for q in range(3):
-                        print(" ", end=" ")
+                    self.drawSingleEmptyElement()
                     pom =0
             print()
 
@@ -77,8 +67,7 @@ class Board:
                     self.drawSingleElement(self.fields[i * self.num_of_fields//2 + j//2], k*3)
                     pom=1
                 else:
-                    for q in range(3):
-                        print(" ", end=" ")
+                    self.drawSingleEmptyElement()
                     pom =0
             print()
 
@@ -95,10 +84,6 @@ class Player:
     def __init__(self,checker_color):
         self.checker_color=checker_color
         self.score=0
-
-
-class Field:
-    pass
 
     
 class Game():
@@ -119,14 +104,14 @@ class Game():
 
     def get_first_player(self):
         print("Choose who plays first: ")
-        print("1. Human")
-        print("2. Computer")
+        print("1. X")
+        print("2. O")
         return int(input())
     
     def start(self):
         self.get_board_size()
-        player1 = Player(checker_white)
-        player2 = Player(checker_black)
+        player1 = Player(CheckerColor.O)
+        player2 = Player(CheckerColor.X)
         while True:
             first_player_choice = self.get_first_player()
             if first_player_choice == 1: 
