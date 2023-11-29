@@ -110,9 +110,11 @@ class Game():
     def get_board_size(self):
         while True:
             board_size = int(input("Enter board size (8 or 16): "))
-            if board_size in [8, 16]:
-                self.board_size = board_size
-                break
+            if board_size in range(8, 17):
+                if board_size%2==0:
+                    self.board_size = board_size
+                    break
+                print("Board size have to be even.")
             else:
                 print("Invalid board size. Please enter 8 or 16.")
             
