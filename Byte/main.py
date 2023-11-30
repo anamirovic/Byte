@@ -83,7 +83,7 @@ class Board:
 class Player:
     def __init__(self,checker_color):
         self.checker_color=checker_color
-        self.score=0
+        self.stacks=0
 
     
 class Game():
@@ -104,8 +104,8 @@ class Game():
 
     def get_first_player(self):
         print("Choose who plays first: ")
-        print("1. X")
-        print("2. O")
+        print("1. You")
+        print("2. Computer")
         return int(input())
     
     def start(self):
@@ -180,12 +180,16 @@ class Game():
         valid_directions = ["GD", "GL", "DL", "DD"]
         return direction in valid_directions
 
+    def is_game_over(self):
+        return self.current_player.stacks > self.max_num_of_stacks // 2
+
     def init(self,player1,player2):
         self.board=Board(self.board_size)
         self.board.initializeBoard()
         self.current_player=player1
         self.player1=player1
         self.player2=player2
+        self.max_num_of_stacks = ((self.board.num_of_fields-2) * (self.board.num_of_fields//2))//8
         
 
 def main():
