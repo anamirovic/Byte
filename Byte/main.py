@@ -143,20 +143,17 @@ class Game():
             else:
                 print("Valid move.")
             
-            # Execute the move
-            # Add your logic here to update the board and check for a winner
-            
-            # Switch players
             self.current_player = self.player2 if self.current_player == self.player1 else self.player1
     
     def is_valid_move(self, position, stack_place, direction):
-        # Implement the logic to check if the move is valid
-        # You can use helper methods to check different conditions
+        a = self.is_valid_position(position) 
+        b = self.is_valid_stack_place(position, stack_place) 
+        c = self.is_valid_direction(direction)
+        k = 1
         return (
             self.is_valid_position(position) and
             self.is_valid_stack_place(position, stack_place) and
             self.is_valid_direction(direction)
-            # Add more conditions as needed
         )
     
     def is_valid_position(self, position):
@@ -165,8 +162,7 @@ class Game():
         return 0 <= (ord(letter) - 65) < self.board.num_of_fields and 1 <= number <= self.board.num_of_fields and (((ord(letter) - 65) % 2 == 0 and number % 2 == 1) or ((ord(letter) - 65) % 2 == 1 and number  % 2 == 0))
     
     def is_valid_stack_place(self,position, stack_place):
-        if(0 > stack_place or stack_place > 7):
-            return False
+
         letter = position[0].upper()
         number = int(position[1:])
         letNum = (ord(letter) - 65) // 2 
@@ -176,7 +172,7 @@ class Game():
             
         row = letNum*self.board.num_of_fields + numNum
         a = self.board.fields[row]
-        if(a[int(stack_place)]==self.current_player.checker_color.value):
+        if( 0 <= int(stack_place) < 8 and a[int(stack_place)]==self.current_player.checker_color.value):
             return True
         return False
     
