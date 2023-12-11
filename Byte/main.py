@@ -1,5 +1,6 @@
 from enum import Enum
 import string
+from collections import deque
 
 class CheckerColor(Enum):
     X="X"
@@ -10,6 +11,49 @@ class Board:
     def __init__(self, num_of_fields):
         self.num_of_fields = num_of_fields
         self.fields = []
+        #self.fields = [
+        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+        #    ['X', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['X', '.', '.', '.', '.', '.', '.', '.', '.'], 
+        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.']]
+        self.table_graph = {
+            'A1': ['B2'],
+            'A3': ['B2', 'B4'],
+            'A5': ['B4', 'B6'],
+            'A7': ['B6', 'B8'],
+            'B2': ['A1', 'A3', 'C1', 'C3'],
+            'B4': ['A3', 'A5', 'C3', 'C5'],
+            'B6': ['A5', 'A7', 'C5', 'C7'],
+            'B8': ['A7', 'C7'],
+            'C1': ['B2', 'D2'],
+            'C3': ['B2', 'B4', 'D2', 'D4'],
+            'C5': ['B4', 'B6', 'D4', 'D6'],
+            'C7': ['B6', 'B8', 'D6', 'D8'],
+            'D2': ['E1', 'E3', 'C1', 'C3'],
+            'D4': ['E3', 'E5', 'C3', 'C5'],
+            'D6': ['E5', 'E7', 'C5', 'C7'],
+            'D8': ['E7', 'C7'],
+            'E1': ['F2', 'D2'],
+            'E3': ['F2', 'F4', 'D2', 'D4'],
+            'E5': ['F4', 'F6', 'D4', 'D6'],
+            'E7': ['F6', 'F8', 'D6', 'D8'],
+            'F2': ['E1', 'E3', 'G1', 'G3'],
+            'F4': ['E3', 'E5', 'G3', 'G5'],
+            'F6': ['E5', 'E7', 'G5', 'G7'],
+            'F8': ['E7', 'G7'],
+            'G1': ['F2', 'H2'],
+            'G3': ['F2', 'F4', 'H2', 'H4'],
+            'G5': ['F4', 'F6', 'H4', 'H6'],
+            'G7': ['F6', 'F8', 'H6', 'H8'],
+            'H2': ['G1', 'G3'],
+            'H4': ['G3', 'G5'],
+            'H6': ['G5', 'G7'],
+            'H8': ['G7'],
+        }
 
     def initializeBoard(self):
         self.fields = [["." for p in range(9)] for p in range(self.num_of_fields//2)]
@@ -137,6 +181,8 @@ class Game():
             
             position, stack_place, direction = move_parts
             
+            print(self.possible_next_moves(position))
+
             if not self.is_valid_move(position, stack_place, direction):
                 print("Invalid move. Please enter a valid move.")
                 continue
@@ -182,6 +228,56 @@ class Game():
 
     def is_game_over(self):
         return self.current_player.stacks > self.max_num_of_stacks // 2
+
+    def possible_next_moves(self, position):
+        visited = set()
+        queue = deque([(position, 0, [])])
+        closest_neighbors = []
+
+        min_length=self.board_size
+
+        while queue:
+            current_node, distance, route = queue.popleft()
+
+            if self.check_position(current_node) and min_length >= distance and distance != 0:
+                min_length = distance
+                closest_neighbors.append((current_node, distance, route + [current_node]))
+            else:
+                visited.add(current_node)
+
+            for neighbor in self.board.table_graph[current_node]:
+                if neighbor not in visited:
+                    queue.append((neighbor, distance + 1, route + [current_node]))
+
+        possible_moves =[]
+        for pom in closest_neighbors:
+            move = ''
+            if chr(ord(position[0]) + 1) == pom[2][1][0]:
+                move = 'D'
+            else:
+                move = 'G'
+            
+            if (int(position[1:]) + 1) == int(pom[2][1][1:]):
+                move = move + 'D'
+            else:
+                move = move + 'L'
+            if move not in possible_moves:
+                possible_moves.append(move)
+        return possible_moves
+
+    def check_position(self, position):
+        letter = position[0].upper()
+        number = int(position[1:])
+        letNum = (ord(letter) - 65) // 2 
+        numNum = number // 2 
+        if((ord(letter) - 65)% 2 ==1):
+            numNum+= self.board.num_of_fields//2-1
+                
+        row = letNum*self.board.num_of_fields + numNum
+        if('X' in self.board.fields[row] or 'O' in self.board.fields[row]):
+            return True
+        return False
+
 
     def init(self,player1,player2):
         self.board=Board(self.board_size)
