@@ -10,16 +10,16 @@ class CheckerColor(Enum):
 class Board:
     def __init__(self, num_of_fields):
         self.num_of_fields = num_of_fields
-        self.fields = []
-        #self.fields = [
-        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
-        #    ['X', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
-        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
-        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
-        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
-        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['X', '.', '.', '.', '.', '.', '.', '.', '.'], 
-        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
-        #    ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.']]
+        #self.fields = []
+        self.fields = [
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+            ['X', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['X', '.', '.', '.', '.', '.', '.', '.', '.'], 
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.']]
         self.table_graph = {
             'A1': ['B2'],
             'A3': ['B2', 'B4'],
@@ -181,7 +181,9 @@ class Game():
             
             position, stack_place, direction = move_parts
             
-            print(self.possible_next_moves(position))
+            #print(self.possible_next_moves(position))
+            print(self.player_possible_moves('O'))
+            #print(self.get_stack_position('B2', 'X'))
 
             if not self.is_valid_move(position, stack_place, direction):
                 print("Invalid move. Please enter a valid move.")
@@ -229,7 +231,23 @@ class Game():
     def is_game_over(self):
         return self.current_player.stacks > self.max_num_of_stacks // 2
 
-    def possible_next_moves(self, position):
+    def player_possible_moves(self, player):
+        moves = []
+        for pom in range(0, 32):
+            if player in self.board.fields[pom]:
+                let = pom // 4 + 65
+                position = chr(let)
+                p = pom // 4
+                if p % 2 == 0:
+                    number = (pom * 2) % self.board_size + 1
+                    position += str(number)
+                else:
+                    number = (pom * 2 + 1) % self.board_size + 1
+                    position += str(number)
+                moves.append(self.possible_next_moves(position, player))
+        return moves
+
+    def possible_next_moves(self, position, player):
         visited = set()
         queue = deque([(position, 0, [])])
         closest_neighbors = []
@@ -260,9 +278,10 @@ class Game():
             if (int(position[1:]) + 1) == int(pom[2][1][1:]):
                 move = move + 'D'
             else:
-                move = move + 'L'
-            if move not in possible_moves:
-                possible_moves.append(move)
+                move = move + 'L' 
+            for pomm in self.get_stack_position(position, player):
+                if (position, pomm, move) not in possible_moves:
+                    possible_moves.append((position, pomm, move))
         return possible_moves
 
     def check_position(self, position):
@@ -278,10 +297,21 @@ class Game():
             return True
         return False
 
+    def get_stack_position(self, position, player):
+        letter = position[0].upper()
+        number = int(position[1:])
+        letNum = (ord(letter) - 65) // 2 
+        numNum = number // 2 
+        if((ord(letter) - 65)% 2 ==1):
+            numNum+= self.board.num_of_fields//2-1
+                
+        row = letNum*self.board.num_of_fields + numNum
+        positions = [index for index in range(0, 8) if self.board.fields[row][index] == player]
+        return positions
 
     def init(self,player1,player2):
         self.board=Board(self.board_size)
-        self.board.initializeBoard()
+        #self.board.initializeBoard()
         self.current_player=player1
         self.player1=player1
         self.player2=player2
