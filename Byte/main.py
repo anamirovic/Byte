@@ -172,6 +172,8 @@ class Game():
         
     def make_move(self):
         while True:
+            print(self.player_possible_moves(self.current_player.checker_color.value))
+            possible_moves=self.player_possible_moves(self.current_player.checker_color.value)
             move_input = input(f"{self.current_player.checker_color.value}'s turn. Enter your move (position stack_place direction): ")
             move_parts = move_input.split()
             
@@ -182,18 +184,23 @@ class Game():
             position, stack_place, direction = move_parts
             
             #print(self.possible_next_moves(position))
-            print(self.player_possible_moves('O'))
+            
             #print(self.get_stack_position('B2', 'X'))
+    
+            move_found = False
+            for moves_list in possible_moves:
+                for move_tuple in moves_list:
+                    if move_tuple == (position, int(stack_place), direction):
+                        move_found = True
+                        break
 
-            if not self.is_valid_move(position, stack_place, direction):
-                print("Invalid move. Please enter a valid move.")
-                continue
-            else:
+            if move_found:
                 print("Valid move.")
+                self.current_player = self.player2 if self.current_player == self.player1 else self.player1
                 self.update_board(position, stack_place, direction)
                 self.board.drawTable()
-            
-            self.current_player = self.player2 if self.current_player == self.player1 else self.player1
+            else:
+                print("Invalid move. Please enter a valid move.")
     
     def is_valid_move(self, position, stack_place, direction):
         a = self.is_valid_position(position) 
@@ -282,8 +289,9 @@ class Game():
 
         a_new=self.board.fields[rowrow]
         non_empty_elements = [element for element in removed_elements if element != "."]
-        for element in reversed(non_empty_elements):
-            a_new.insert(0, element)
+        for element in non_empty_elements:
+            first_dot_index = a_new.index('.')
+            a_new.insert(first_dot_index, element)
         #a_new.insert(0,non_empty_elements) 
     
         
