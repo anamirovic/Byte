@@ -190,6 +190,8 @@ class Game():
                 continue
             else:
                 print("Valid move.")
+                self.update_board(position, stack_place, direction)
+                self.board.drawTable()
             
             self.current_player = self.player2 if self.current_player == self.player1 else self.player1
     
@@ -227,6 +229,66 @@ class Game():
     def is_valid_direction(self, direction):
         valid_directions = ["GD", "GL", "DL", "DD"]
         return direction in valid_directions
+    
+    def update_board(self, position, stack_place, direction):
+        letter = position[0].upper()
+        number = int(position[1:])
+        letNum = (ord(letter) - 65) // 2 
+        numNum = number // 2 
+        if((ord(letter) - 65)% 2 ==1):
+            numNum+= self.board.num_of_fields//2-1
+            
+        row = letNum*self.board.num_of_fields + numNum
+        a = self.board.fields[row]
+
+        removed_elements = a[int(stack_place):]
+        a[int(stack_place):] = ["."] * len(removed_elements)
+
+        #a[int(stack_place)]="."
+            
+        
+        if direction=="DL":
+            if((ord(letter) - 65)% 2 ==1):
+                letNum+=1
+            
+            number-=1
+            pom = (ord(letter) - 65)+1
+            
+        elif direction == "DD":
+            if((ord(letter) - 65)% 2 ==1):
+                letNum+=1
+            
+            number+=1
+            pom = (ord(letter) - 65)+1
+
+        elif direction == "GL":
+            if((ord(letter) - 65)% 2 ==0):
+                letNum-=1
+            
+            number-=1
+            pom = (ord(letter) - 65)-1
+
+        elif direction == "GD":
+            if((ord(letter) - 65)% 2 ==0):
+                letNum-=1
+            
+            number+=1
+            pom = (ord(letter) - 65)-1
+
+        numNum = number // 2 
+        if(pom % 2 ==1):
+            numNum+= self.board.num_of_fields//2-1
+        rowrow=letNum*self.board.num_of_fields+numNum
+
+        a_new=self.board.fields[rowrow]
+        non_empty_elements = [element for element in removed_elements if element != "."]
+        for element in reversed(non_empty_elements):
+            a_new.insert(0, element)
+        #a_new.insert(0,non_empty_elements) 
+    
+        
+        #a.insert(0, self.current_player.checker_color.value)     
+
 
     def is_game_over(self):
         return self.current_player.stacks > self.max_num_of_stacks // 2
