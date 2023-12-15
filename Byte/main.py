@@ -12,9 +12,9 @@ class Board:
         self.num_of_fields = num_of_fields
         #self.fields = []
         self.fields = [
-            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
-            ['X', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
-            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], 
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['X', 'O', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+            ['O', 'X', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], 
+            ['O', 'X', 'O', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], 
             ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['X', 'X', 'O', 'O', 'X', 'X', 'X', '.', '.'], ['X', '.', '.', '.', '.', '.', '.', '.', '.'],
             ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', '.', '.', '.', '.', '.', '.', '.', '.'], ['O', 'X', 'O', 'X', 'O', 'X', 'O', '.', '.'],
             ['.', '.', '.', '.', '.', '.', '.', '.', '.'], ['X', '.', '.', '.', '.', '.', '.', '.', '.'], ['X', '.', '.', '.', '.', '.', '.', '.', '.'], ['X', '.', '.', '.', '.', '.', '.', '.', '.'], 
@@ -134,7 +134,8 @@ class Game():
     def __init__(self):
         self.board = None
         self.winner = None
-
+        self.score_X = 0
+        self.score_O = 0
     
     def get_board_size(self):
         while True:
@@ -166,14 +167,19 @@ class Game():
                 break
             else:
                  print("Invalid choice. Please enter 1 or 2.")
-        while True:
+        while not self.is_game_over():
             self.board.drawTable()
             self.make_move()
         
     def make_move(self):
-        while True:
-            print(self.player_possible_moves(self.current_player.checker_color.value))
+        game_over = False
+        while not game_over:
+            # print(self.player_possible_moves(self.current_player.checker_color.value))
             possible_moves=self.player_possible_moves(self.current_player.checker_color.value)
+            
+            
+            
+            print(possible_moves)
             move_input = input(f"{self.current_player.checker_color.value}'s turn. Enter your move (position stack_place direction): ")
             move_parts = move_input.split()
             
@@ -197,8 +203,12 @@ class Game():
             if move_found:
                 print("Valid move.")
                 self.update_board(position, stack_place, direction)
-                self.board.drawTable()
-                self.current_player = self.player2 if self.current_player == self.player1 else self.player1
+                if self.is_game_over():
+                    print(f"Congrats {self.current_player.checker_color.value}! You won the game")
+                    game_over = True
+                else:
+                    self.board.drawTable()
+                    self.current_player = self.player2 if self.current_player == self.player1 else self.player1
             else:
                 print("Invalid move. Please enter a valid move.")
     
@@ -362,8 +372,74 @@ class Game():
                 move = move + 'L' 
             for pomm in self.get_stack_position(position, player):
                 if (position, pomm, move) not in possible_moves:
-                    possible_moves.append((position, pomm, move))
+                        rows = self.get_rows_by_position(position, move)
+                        # print((position, pomm, move), rows)
+                        a = rows[0].index('.') - pomm
+                        b = rows[1].index('.')
+                        # print(a,pomm,b)
+                        if a + b <= 8 and pomm < b:
+                            possible_moves.append((position, pomm, move))
         return possible_moves
+    
+    # def check_if_next_move_valid(self, position, pomm, move):
+        # flag = True
+        # column = int(position[1:])
+        # current_field = get_row_by_position(position)
+        # next_position = 0
+        # if move[0] == 'G':
+            # if column % 2 == 0:
+                # next_position
+    
+    # def get_row_by_position(self,position):
+        # letter = position[0].upper()
+        # number = int(position[1:])
+        # letNum = (ord(letter) - 65) // 2 
+        # numNum = number // 2 
+        # if((ord(letter) - 65)% 2 ==1):
+            # numNum+= self.board.num_of_fields//2-1
+            
+        # row = letNum*self.board.num_of_fields + numNum
+        # return self.board.fields[row]
+        
+    def get_rows_by_position(self,position, move):
+        letter = position[0].upper()
+        number = int(position[1:])
+        letNum = (ord(letter) - 65) // 2 
+        numNum = number // 2 
+        if((ord(letter) - 65)% 2 ==1):
+            numNum+= self.board.num_of_fields//2-1
+            
+            
+        row = letNum*self.board.num_of_fields + numNum
+        
+        
+        nextRow = row
+        if((ord(letter) - 65)% 2 ==1):
+            if move[0] == 'G':
+                nextRow-=4
+            else:
+                nextRow+=4
+        else:
+            if move[0] == 'G':
+                nextRow-=5
+            else:
+                nextRow+=5
+        if move[1] == 'D':
+                nextRow+=1
+                
+        a = self.board.fields[row]
+        b = self.board.fields[nextRow]
+        c = []
+        c.append(a)
+        c.append(b)
+        return c
+        
+    # def check_if_neighbors_empty(self, node):
+        # for neighbor in self.board.table_graph[node]:
+            # neighbor_row = get_row_by_position(neighbor)
+            # if neighbor_row.index('.') > 0:
+                # return False
+        # return True
 
     def check_position(self, position):
         letter = position[0].upper()
