@@ -423,7 +423,7 @@ class Game():
             if move[0] == 'G':
                 nextRow-=5
             else:
-                nextRow+=5
+                nextRow+=3
         if move[1] == 'D':
                 nextRow+=1
                 
