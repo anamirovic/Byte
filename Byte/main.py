@@ -1,6 +1,7 @@
 from enum import Enum
 import string
 from collections import deque
+import copy
 
 class CheckerColor(Enum):
     X="X"
@@ -68,7 +69,7 @@ class Board:
                     self.fields.append(newList)
         self.fields+=[["." for p in range(9)] for p in range(self.num_of_fields//2)]
     
-    def drawTable(self):
+    def drawTable(self, table=None):
         listNumber = list(range(self.num_of_fields+1))
         listLetters = [letter for letter in string.ascii_uppercase[:self.num_of_fields]]
         for i in range(self.num_of_fields + 1):
@@ -79,11 +80,11 @@ class Board:
         print()
         for i in range(self.num_of_fields):
             if i % 2 == 0:
-                self.drawEvenRow(i, listLetters)
+                self.drawEvenRow(i, listLetters, self.fields if table is None else table)
             else:
-                self.drawOddRow(i, listLetters)
+                self.drawOddRow(i, listLetters, self.fields if table is None else table)
             
-    def drawEvenRow(self, i, listLetters):
+    def drawEvenRow(self, i, listLetters, table):
         pom = 0
         for k in range(2, -1, -1):
             if k==1:
@@ -92,14 +93,14 @@ class Board:
                 print("  ", end=" ")
             for j in range(self.num_of_fields):
                 if j%2==0:
-                    self.drawSingleElement(self.fields[i * self.num_of_fields//2 + j//2], k*3)
+                    self.drawSingleElement(table[i * self.num_of_fields//2 + j//2], k*3)
                     pom=1
                 else:
                     self.drawSingleEmptyElement()
                     pom =0
             print()
 
-    def drawOddRow(self, i, listLetters):
+    def drawOddRow(self, i, listLetters, table):
         pom = 1
         for k in range(2, -1, -1):
             if k==1:
@@ -108,7 +109,7 @@ class Board:
                 print("  ", end=" ")
             for j in range(self.num_of_fields):
                 if j%2!=0:
-                    self.drawSingleElement(self.fields[i * self.num_of_fields//2 + j//2], k*3)
+                    self.drawSingleElement(table[i * self.num_of_fields//2 + j//2], k*3)
                     pom=1
                 else:
                     self.drawSingleEmptyElement()
@@ -152,11 +153,31 @@ class Game():
         print("1. You")
         print("2. Computer")
         return int(input())
+
+    def get_opponent(self):
+        print("Choose opponent: ")
+        print("1. Player")
+        print("2. Computer")
+        return int(input())
     
     def start(self):
         self.get_board_size()
         player1 = Player(CheckerColor.X)
         player2 = Player(CheckerColor.O)
+
+        computer = False
+
+        while True:
+            opponent = self.get_opponent()
+            if opponent == 1: 
+                computer = False
+                break
+            elif opponent == 2:
+                computer = True
+                break
+            else:
+                 print("Invalid choice. Please enter 1 or 2.")
+
         while True:
             first_player_choice = self.get_first_player()
             if first_player_choice == 1: 
@@ -167,50 +188,173 @@ class Game():
                 break
             else:
                  print("Invalid choice. Please enter 1 or 2.")
-        while not self.is_game_over():
-            self.board.drawTable()
-            self.make_move()
         
+        if not computer:
+            while not self.is_game_over():
+                self.board.drawTable()
+                print(computer)
+                self.make_move()
+        else:
+            while not self.is_game_over():
+                print(self.current_player.checker_color.value)
+                if self.current_player.checker_color == CheckerColor.X:
+                    self.board.drawTable()
+                    self.make_move()
+                    self.current_player = self.player2 if self.current_player == self.player1 else self.player1
+                else:
+                    tabla = copy.deepcopy(self.board.fields)
+                    potez = self.minimax(tabla, 9, False)
+                    print("Computer move: ", potez[0])
+                    self.computer_make_move(potez[0], "O", self.board.fields, True)
+                    self.current_player = self.player2 if self.current_player == self.player1 else self.player1
+
+    def minimax(self, tabla, dubina, moj_potez, alpha=(None, -10), beta=(None, 10)):
+        if moj_potez:
+            return self.max_value(tabla, dubina, alpha, beta)
+        else:
+            return self.min_value(tabla, dubina, alpha, beta)
+
+    def min_value(self, table, depth, alpha, beta, move=None):
+        #provera za kraj
+        moves=self.player_possible_moves(self.current_player.checker_color.value, table)#ne valja treba da se filtriraju potezi
+        moves_list = [pom for pom in moves if len(pom)!=0]
+        if depth==0 or moves_list is None or len(moves_list)==0:
+            #return (move, self.rate(table))
+            return (move, 8)
+        else:
+            for moves in moves_list:
+                for s in moves:
+                    beta = min(beta, self.max_value(self.computer_make_move(s, "O", table), depth-1, alpha, beta, s if move is None else move), key=lambda x: x[1])
+                    if beta[1] <= alpha[1]:
+                        return alpha
+        return beta
+    
+    def max_value(self, table, depth, alpha, beta, move=None):
+        #provera za kraj
+        moves=self.player_possible_moves(self.current_player.checker_color.value, table)#ne valja treba da se filtriraju potezi
+        moves_list = [pom for pom in moves if len(pom)!=0]
+        if depth==0 or moves_list is None or len(moves_list)==0:
+            #return (move, self.rate(table))
+            return (move, 8)
+        else:
+            for moves in moves_list:
+                for s in moves:
+                    alpha = max(alpha, self.min_value(self.computer_make_move(s, "X", table), depth-1, alpha, beta, s if move is None else move), key=lambda x: x[1])
+                    if alpha[1] >= beta[1]:
+                        return beta
+        return alpha
+
+    #def rate(self, rate):
+
+    def computer_make_move(self, move, player, table, final_move = False):
+        letter = move[0][0].upper()
+        number = int(move[0][1:])
+        letNum = (ord(letter) - 65) // 2 
+        numNum = number // 2 
+        if((ord(letter) - 65)% 2 ==1):
+            numNum+= self.board.num_of_fields//2-1
+        
+        table_copy=table[:]
+        row = letNum*self.board.num_of_fields + numNum
+        a = table_copy[row]
+
+        removed_elements = a[int(move[1]):]
+        a[int(move[1]):] = ["."] * len(removed_elements)
+            
+        
+        if move[2]=="DL":
+            if((ord(letter) - 65)% 2 ==1):
+                letNum+=1
+            
+            number-=1
+            pom = (ord(letter) - 65)+1
+            
+        elif move[2] == "DD":
+            if((ord(letter) - 65)% 2 ==1):
+                letNum+=1
+            
+            number+=1
+            pom = (ord(letter) - 65)+1
+
+        elif move[2] == "GL":
+            if((ord(letter) - 65)% 2 ==0):
+                letNum-=1
+            
+            number-=1
+            pom = (ord(letter) - 65)-1
+
+        elif move[2] == "GD":
+            if((ord(letter) - 65)% 2 ==0):
+                letNum-=1
+            
+            number+=1
+            pom = (ord(letter) - 65)-1
+
+        numNum = number // 2 
+        if(pom % 2 ==1):
+            numNum+= self.board.num_of_fields//2-1
+        rowrow=letNum*self.board.num_of_fields+numNum
+
+        a_new=table_copy[rowrow]
+        non_empty_elements = [element for element in removed_elements if element != "."]
+        for element in non_empty_elements:
+            first_dot_index = a_new.index('.')
+            a_new.insert(first_dot_index, element)
+
+        
+        non_empty=[element for element in a_new if element !="."]
+        if len(non_empty)==8:
+            last_element_color = non_empty[-1]
+            
+            #if last_element_color == self.current_player.checker_color.value:
+            if last_element_color == player:
+                if final_move:
+                    self.current_player.stacks += 1
+                    print(f"Number of {self.current_player.checker_color.value}'s stacks: {self.current_player.stacks} ")
+                    print(self.current_player.stacks)
+
+                for i in range(8):
+                    a_new[i] = '.'
+        return table_copy
+
     def make_move(self):
-        game_over = False
-        while not game_over:
-            # print(self.player_possible_moves(self.current_player.checker_color.value))
-            possible_moves=self.player_possible_moves(self.current_player.checker_color.value)
+        possible_moves=self.player_possible_moves(self.current_player.checker_color.value)#ne valja treba da se filtriraju potezi
             
-            
-            
-            print(possible_moves)
+        print(possible_moves)
+        load_input = True
+        while load_input:
             move_input = input(f"{self.current_player.checker_color.value}'s turn. Enter your move (position stack_place direction): ")
             move_parts = move_input.split()
             
             if len(move_parts) != 3:
                 print("Invalid input. Please enter position, stack place, and direction.")
-                continue
-            
-            position, stack_place, direction = move_parts
-            
-            #print(self.possible_next_moves(position))
-            
-            #print(self.get_stack_position('B2', 'X'))
-    
-            move_found = False
-            for moves_list in possible_moves:
-                for move_tuple in moves_list:
-                    if move_tuple == (position, int(stack_place), direction):
-                        move_found = True
-                        break
-
-            if move_found:
-                print("Valid move.")
-                self.update_board(position, stack_place, direction)
-                if self.is_game_over():
-                    print(f"Congrats {self.current_player.checker_color.value}! You won the game")
-                    game_over = True
-                else:
-                    self.board.drawTable()
-                    self.current_player = self.player2 if self.current_player == self.player1 else self.player1
+                #continue
             else:
-                print("Invalid move. Please enter a valid move.")
+                load_input = False
+            
+        position, stack_place, direction = move_parts
+            
+        #print(self.possible_next_moves(position))
+            
+        #print(self.get_stack_position('B2', 'X'))
+    
+        move_found = False
+        for moves_list in possible_moves:
+            for move_tuple in moves_list:
+                if move_tuple == (position, int(stack_place), direction):
+                    move_found = True
+                    break
+
+        if move_found:
+            print("Valid move.")
+            self.update_board(position, stack_place, direction)
+            if self.is_game_over():
+                print(f"Congrats {self.current_player.checker_color.value}! You won the game")
+            else:
+                self.board.drawTable()
+        else:
+            print("Invalid move. Please enter a valid move.")
+            
     
     def is_valid_move(self, position, stack_place, direction):
         a = self.is_valid_position(position) 
@@ -314,18 +458,14 @@ class Game():
                 for i in range(8):
                     a_new[i] = '.'
 
-    
-
-       
-
-
     def is_game_over(self):
         return self.current_player.stacks > self.max_num_of_stacks // 2
 
-    def player_possible_moves(self, player):
+    def player_possible_moves(self, player, table=None):
+        board = self.board.fields if table is None else table
         moves = []
         for pom in range(0, 32):
-            if player in self.board.fields[pom]:
+            if player in board[pom]:
                 let = pom // 4 + 65
                 position = chr(let)
                 p = pom // 4
@@ -335,10 +475,11 @@ class Game():
                 else:
                     number = (pom * 2 + 1) % self.board_size + 1
                     position += str(number)
-                moves.append(self.possible_next_moves(position, player))
+                moves.append(self.possible_next_moves(position, player, board))
         return moves
 
-    def possible_next_moves(self, position, player):
+    def possible_next_moves(self, position, player, table = None):
+        board = self.board.fields if table is None else table
         visited = set()
         queue = deque([(position, 0, [])])
         closest_neighbors = []
@@ -348,7 +489,7 @@ class Game():
         while queue:
             current_node, distance, route = queue.popleft()
 
-            if self.check_position(current_node) and min_length >= distance and distance != 0:
+            if self.check_position(current_node, board) and min_length >= distance and distance != 0:
                 min_length = distance
                 closest_neighbors.append((current_node, distance, route + [current_node]))
             else:
@@ -370,9 +511,9 @@ class Game():
                 move = move + 'D'
             else:
                 move = move + 'L' 
-            for pomm in self.get_stack_position(position, player):
+            for pomm in self.get_stack_position(position, player, board):
                 if (position, pomm, move) not in possible_moves:
-                        rows = self.get_rows_by_position(position, move)
+                        rows = self.get_rows_by_position(position, move, board)
                         # print((position, pomm, move), rows)
                         a = rows[0].index('.') - pomm
                         b = rows[1].index('.')
@@ -401,18 +542,17 @@ class Game():
         # row = letNum*self.board.num_of_fields + numNum
         # return self.board.fields[row]
         
-    def get_rows_by_position(self,position, move):
+    def get_rows_by_position(self,position, move, table = None):
+        board = self.board.fields if table is None else table
         letter = position[0].upper()
         number = int(position[1:])
         letNum = (ord(letter) - 65) // 2 
         numNum = number // 2 
         if((ord(letter) - 65)% 2 ==1):
             numNum+= self.board.num_of_fields//2-1
-            
-            
+                        
         row = letNum*self.board.num_of_fields + numNum
-        
-        
+                
         nextRow = row
         if((ord(letter) - 65)% 2 ==1):
             if move[0] == 'G':
@@ -427,8 +567,8 @@ class Game():
         if move[1] == 'D':
                 nextRow+=1
                 
-        a = self.board.fields[row]
-        b = self.board.fields[nextRow]
+        a = board[row]
+        b = board[nextRow]
         c = []
         c.append(a)
         c.append(b)
@@ -441,7 +581,8 @@ class Game():
                 # return False
         # return True
 
-    def check_position(self, position):
+    def check_position(self, position, table = None):
+        board = self.board.fields if table is None else table
         letter = position[0].upper()
         number = int(position[1:])
         letNum = (ord(letter) - 65) // 2 
@@ -450,11 +591,12 @@ class Game():
             numNum+= self.board.num_of_fields//2-1
                 
         row = letNum*self.board.num_of_fields + numNum
-        if('X' in self.board.fields[row] or 'O' in self.board.fields[row]):
+        if('X' in board[row] or 'O' in board[row]):
             return True
         return False
 
-    def get_stack_position(self, position, player):
+    def get_stack_position(self, position, player, table = None):
+        board = self.board.fields if table is None else table
         letter = position[0].upper()
         number = int(position[1:])
         letNum = (ord(letter) - 65) // 2 
@@ -463,7 +605,7 @@ class Game():
             numNum+= self.board.num_of_fields//2-1
                 
         row = letNum*self.board.num_of_fields + numNum
-        positions = [index for index in range(0, 8) if self.board.fields[row][index] == player]
+        positions = [index for index in range(0, 8) if board[row][index] == player]
         return positions
 
     def init(self,player1,player2):
